@@ -407,6 +407,91 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* 新增：客服按钮样式 */
+        .customer-service-btn {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(to right, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.6);
+            transition: all 0.3s ease;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .customer-service-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.8);
+            background: linear-gradient(to right, #ee5a52, #ff6b6b);
+        }
+
+        /* 响应式适配客服按钮 */
+        @media (max-width: 480px) {
+            .customer-service-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+                right: 15px;
+                bottom: 15px;
+            }
+        }
+
+        /* 新增：客服图片弹窗样式 */
+        .service-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            padding: 20px;
+        }
+
+        .service-modal-content {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 90%;
+            max-height: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .service-modal-img {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 8px;
+        }
+
+        .service-modal-close {
+            margin-top: 15px;
+            padding: 8px 20px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .service-modal-close:hover {
+            background: #ee5a52;
+        }
     </style>
 </head>
 <body>
@@ -434,6 +519,17 @@
         </div>
 
         <button id="draw-btn">抽取塔罗牌</button>
+    </div>
+
+    <!-- 新增：客服按钮 -->
+    <button class="customer-service-btn" id="customerServiceBtn">💬</button>
+
+    <!-- 新增：客服图片弹窗 - 替换为星辰塔塔二维码 -->
+    <div class="service-modal" id="serviceModal">
+        <div class="service-modal-content">
+            <img src="https://p11-flow-imagex-download-sign.byteimg.com/tos-cn-i-a9rns2rl98/2487ac53298d4bd8b2b3b71089327c91.jpg~tplv-a9rns2rl98-24:720:720.image?lk3s=8e244e95&rcl=2026022022594654476225308B8879DA6A&rrcfp=8a172a1a&x-expires=1772204387&x-signature=P%2B4%2FEsLdhCpTFJ1TJFnah7dXI1A%3D" alt="星辰塔塔微信二维码" class="service-modal-img">
+            <button class="service-modal-close" id="modalCloseBtn">关闭</button>
+        </div>
     </div>
 
     <script>
@@ -574,6 +670,10 @@
         const drawBtn = document.getElementById('draw-btn');
         const spreadBtns = document.querySelectorAll('.spread-btn');
         const spreadInfo = document.getElementById('spreadInfo');
+        // 新增：客服弹窗相关元素
+        const serviceModal = document.getElementById('serviceModal');
+        const customerServiceBtn = document.getElementById('customerServiceBtn');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
 
         // 初始化牌阵选择
         spreadBtns.forEach(btn => {
@@ -739,6 +839,28 @@
             alert('抱歉，塔罗牌加载出错，请刷新页面重试。');
             drawBtn.innerHTML = "抽取塔罗牌";
             drawBtn.disabled = false;
+        });
+
+        // 新增：客服按钮点击事件 - 显示图片弹窗
+        customerServiceBtn.addEventListener('click', function() {
+            serviceModal.style.display = 'flex';
+            // 禁止页面滚动
+            document.body.style.overflow = 'hidden';
+        });
+
+        // 新增：关闭弹窗事件
+        modalCloseBtn.addEventListener('click', function() {
+            serviceModal.style.display = 'none';
+            // 恢复页面滚动
+            document.body.style.overflow = 'auto';
+        });
+
+        // 新增：点击弹窗外部关闭
+        serviceModal.addEventListener('click', function(e) {
+            if (e.target === serviceModal) {
+                serviceModal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
         });
     </script>
 </body>
