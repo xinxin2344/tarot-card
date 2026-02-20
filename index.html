@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>神秘塔罗牌 - 牌阵抽取</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+            color: #fff;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.8rem;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            line-height: 1.2;
+        }
+
+        .description {
+            margin-bottom: 1.5rem;
+            color: #e0e0e0;
+            font-size: 1rem;
+            line-height: 1.4;
+            padding: 0 10px;
+        }
+
+        /* 牌阵选择区域 */
+        .spread-selector {
+            margin: 1.5rem 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 0 5px;
+        }
+
+        .spread-btn {
+            background: linear-gradient(to right, #6c5ce7, #8e44ad);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .spread-btn.active {
+            background: linear-gradient(to right, #a29bfe, #6c5ce7);
+            box-shadow: 0 0 15px rgba(108, 92, 231, 0.7);
+        }
+
+        .spread-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .spread-info {
+            margin: 1rem 0;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            max-width: 100%;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        /* 塔罗牌容器 */
+        .tarot-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 1.5rem 0;
+            perspective: 2000px;
+            padding: 0 5px;
+        }
+
+        /* 塔罗牌包装器 - 用于包含卡牌和下方文字 */
+        .card-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        /* 塔罗牌样式 */
+        .tarot-card {
+            width: 110px;
+            height: 180px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        /* 牌阵适配 - 单牌放大 */
+        .tarot-container.single .tarot-card {
+            width: 240px;
+            height: 380px;
+        }
+
+        /* 牌面和牌背通用样式 */
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            overflow: hidden;
+        }
+
+        /* 牌背样式设计 */
+        .card-back {
+            background: radial-gradient(circle at center, #4a1c40, #2d0b27);
+            border: 3px solid #f5e8d5;
+        }
+
+        /* 单牌模式牌背边框加宽 */
+        .tarot-container.single .card-back {
+            border-width: 6px;
+        }
+
+        /* 牌背花纹设计 */
+        .card-back::before {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            border: 2px dashed #f5e8d580;
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+
+        .card-back::after {
+            content: '🔮';
+            font-size: 30px;
+            opacity: 0.7;
+        }
+
+        /* 单牌模式牌背图标放大 */
+        .tarot-container.single .card-back::after {
+            font-size: 60px;
+        }
+
+        /* 牌面样式设计 */
+        .card-front {
+            background: linear-gradient(135deg, #f8f4e9, #f5e8d5);
+            color: #2d0b27;
+            transform: rotateY(180deg);
+            border: 3px solid #4a1c40;
+            flex-direction: column;
+            text-align: center;
+            font-size: 0.75rem;
+            padding: 10px;
+        }
+
+        /* 单牌模式牌面边框加宽 */
+        .tarot-container.single .card-front {
+            border-width: 6px;
+            font-size: 0.95rem;
+            padding: 15px;
+        }
+
+        /* 翻转效果 */
+        .tarot-card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        /* 牌面内容样式 */
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 0.4rem;
+            color: #4a1c40;
+            line-height: 1.2;
+            word-wrap: break-word;
+            width: 100%;
+        }
+
+        .tarot-container.single .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .card-image {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 0.4rem;
+            font-size: 35px;
+        }
+
+        .tarot-container.single .card-image {
+            width: 100px;
+            height: 100px;
+            font-size: 70px;
+            margin-bottom: 0.8rem;
+        }
+
+        .card-meaning {
+            font-size: 0.7rem;
+            line-height: 1.4;
+            color: #333;
+            max-height: 80px;
+            overflow-y: auto;
+            width: 100%;
+            padding-right: 5px;
+            text-align: left;
+        }
+
+        /* 优化滚动条样式 */
+        .card-meaning::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .card-meaning::-webkit-scrollbar-thumb {
+            background: #4a1c40;
+            border-radius: 3px;
+        }
+
+        .tarot-container.single .card-meaning {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            max-height: 150px;
+            padding-right: 8px;
+        }
+
+        /* 牌位文字样式 - 移到卡牌下方 */
+        .card-position {
+            font-size: 0.8rem;
+            background: rgba(74, 28, 64, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+            z-index: 1;
+            text-align: center;
+            max-width: 90%;
+            word-wrap: break-word;
+        }
+
+        .tarot-container.single .card-position {
+            font-size: 0.9rem;
+            padding: 5px 10px;
+        }
+
+        /* 按钮样式 */
+        #draw-btn {
+            background: linear-gradient(to right, #8e44ad, #9b59b6);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 1.5rem 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(142, 68, 173, 0.4);
+            width: 80%;
+            max-width: 300px;
+        }
+
+        #draw-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(142, 68, 173, 0.6);
+            background: linear-gradient(to right, #9b59b6, #8e44ad);
+        }
+
+        #draw-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* 响应式设计 - 平板 */
+        @media (min-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .tarot-card {
+                width: 130px;
+                height: 200px;
+            }
+            
+            .tarot-container.single .tarot-card {
+                width: 260px;
+                height: 420px;
+            }
+            
+            .spread-btn {
+                padding: 10px 18px;
+                font-size: 0.95rem;
+            }
+        }
+
+        /* 响应式设计 - 大屏手机 */
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.6rem;
+            }
+            
+            .tarot-card {
+                width: 95px;
+                height: 160px;
+            }
+            
+            .tarot-container.single .tarot-card {
+                width: 220px;
+                height: 350px;
+            }
+            
+            .spread-selector {
+                gap: 8px;
+            }
+            
+            .spread-btn {
+                padding: 7px 10px;
+                font-size: 0.8rem;
+                margin-bottom: 8px;
+            }
+            
+            .card-title {
+                font-size: 0.8rem;
+            }
+            
+            .card-meaning {
+                font-size: 0.65rem;
+                max-height: 70px;
+            }
+            
+            .card-position {
+                font-size: 0.75rem;
+                padding: 3px 7px;
+            }
+        }
+
+        /* 响应式设计 - 小屏手机 */
+        @media (max-width: 375px) {
+            .tarot-card {
+                width: 85px;
+                height: 140px;
+            }
+            
+            .tarot-container.single .tarot-card {
+                width: 200px;
+                height: 320px;
+            }
+            
+            .spread-btn {
+                font-size: 0.75rem;
+                padding: 6px 8px;
+            }
+            
+            .card-position {
+                font-size: 0.7rem;
+                padding: 2px 6px;
+            }
+            
+            .card-meaning {
+                max-height: 60px;
+            }
+        }
+
+        /* 加载动画 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔮 神秘塔罗牌</h1>
+        <p class="description">选择牌阵，抽取你的命运塔罗牌，探索未知的指引</p>
+        
+        <!-- 牌阵选择 -->
+        <div class="spread-selector">
+            <button class="spread-btn active" data-spread="single">单牌抽牌 (1张)</button>
+            <button class="spread-btn" data-spread="choice">二选一牌阵 (2张)</button>
+            <button class="spread-btn" data-spread="three">运势牌阵 (3张)</button>
+            <button class="spread-btn" data-spread="five">心灵牌阵 (5张)</button>
+            <button class="spread-btn" data-spread="celtic">凯尔特十字 (10张)</button>
+        </div>
+        
+        <!-- 牌阵说明 -->
+        <div class="spread-info" id="spreadInfo">
+            <strong>单牌抽牌</strong>：最简洁的牌阵，用于快速获取当下问题的核心指引。
+        </div>
+        
+        <!-- 塔罗牌容器 -->
+        <div class="tarot-container single" id="tarotContainer">
+            <!-- 卡片会通过JS动态生成 -->
+        </div>
+
+        <button id="draw-btn">抽取塔罗牌</button>
+    </div>
+
+    <script>
+        // 完整的78张塔罗牌数据库
+        const tarotCards = {
+            // 22张大阿尔卡那
+            major: [
+                { name: "0. 愚者", icon: "🃏", meaning: "代表着自由、冒险和新的开始。你正处于人生的新阶段，充满无限可能，勇敢地追随内心的召唤。" },
+                { name: "1. 魔术师", icon: "🪄", meaning: "代表着创造力、行动力和自信。你拥有实现目标所需的所有资源和能力，现在是采取行动的最佳时机。" },
+                { name: "2. 女祭司", icon: "🧝‍♀️", meaning: "象征着直觉、智慧和内在的声音。现在需要倾听你的直觉，相信内在的指引，答案藏在平静的思考中。" },
+                { name: "3. 女皇", icon: "👑", meaning: "代表着丰盛、滋养和创造力。你的生活将迎来丰收阶段，情感、事业或财富都将得到满足和成长。" },
+                { name: "4. 皇帝", icon: "👑", meaning: "象征着领导力、结构和控制力。展现权威和决断力，建立清晰界限，才能掌控局面。" },
+                { name: "5. 教皇", icon: "📿", meaning: "代表着传统、智慧和指导。寻求智者建议，遵循已有经验，将帮助你做出正确决定。" },
+                { name: "6. 恋人", icon: "❤️", meaning: "象征着选择、和谐和关系。面临重要选择，听从内心声音，在关系中保持真诚和平衡。" },
+                { name: "7. 战车", icon: "🏎️", meaning: "代表着勇气、决心和掌控力。拥有克服障碍的力量，保持专注和决心，驶向成功方向。" },
+                { name: "8. 力量", icon: "💪", meaning: "象征着内在的力量、勇气和温柔。真正的力量来自内心的平静和自信，而非外在强硬。" },
+                { name: "9. 隐士", icon: "🧙‍♂️", meaning: "代表着内省、智慧和独处。需要退一步自我反思，在安静中寻找答案和方向。" },
+                { name: "10. 命运之轮", icon: "🔄", meaning: "象征着变化、机遇和命运。生活经历自然循环，接受变化，顺应潮流，好运即将到来。" },
+                { name: "11. 正义", icon: "⚖️", meaning: "代表着公平、平衡和真相。所有行为都会得到相应回报，保持公正和诚实至关重要。" },
+                { name: "12. 倒吊人", icon: "🔄", meaning: "象征着牺牲、放下和新视角。有时需要放下执念，换个角度看问题，才能获得智慧。" },
+                { name: "13. 死神", icon: "💀", meaning: "代表着结束、转变和重生。不是物理死亡，而是旧事物的结束和新事物的开始。" },
+                { name: "14. 节制", icon: "⚗️", meaning: "象征着平衡、调和和自我控制。在不同事物间找到平衡，适度行事，避免极端。" },
+                { name: "15. 恶魔", icon: "😈", meaning: "代表着诱惑、束缚和物质欲望。认清自己的执念和束缚，找回内心的自由。" },
+                { name: "16. 塔", icon: "🏰", meaning: "象征着突然的改变、崩溃和觉醒。旧有结构崩塌，虽然痛苦但为新的成长创造空间。" },
+                { name: "17. 星星", icon: "⭐", meaning: "代表着希望、灵感和信仰。即使在黑暗中，也有希望之光指引前行的方向。" },
+                { name: "18. 月亮", icon: "🌙", meaning: "象征着潜意识、直觉和幻象。关注梦境和直觉，看清表象背后的真实。" },
+                { name: "19. 太阳", icon: "☀️", meaning: "代表着成功、喜悦和生命力。充满活力和正能量，努力将得到应有的回报。" },
+                { name: "20. 审判", icon: "📯", meaning: "象征着觉醒、重生和自我审视。倾听内心的召唤，做出改变，迎来新的开始。" },
+                { name: "21. 世界", icon: "🌍", meaning: "代表着完成、圆满和整合。一个阶段的完美结束，为新的旅程做好准备。" }
+            ],
+            // 56张小阿尔卡那
+            minor: [
+                // 权杖 (火元素)
+                { name: "权杖Ace", icon: "🔥", meaning: "行动力的开始，新的计划和热情，充满活力的开端。" },
+                { name: "权杖二", icon: "🔥", meaning: "计划和决定，权衡选择，为未来做准备。" },
+                { name: "权杖三", icon: "🔥", meaning: "远见和规划，商业成功，海外发展的机会。" },
+                { name: "权杖四", icon: "🔥", meaning: "稳定和庆祝，暂时的安宁，达成目标后的喜悦。" },
+                { name: "权杖五", icon: "🔥", meaning: "冲突和竞争，小的争吵，需要协调和妥协。" },
+                { name: "权杖六", icon: "🔥", meaning: "胜利和认可，公开的成功，得到他人赞赏。" },
+                { name: "权杖七", icon: "🔥", meaning: "挑战和防御，面对困难，坚持自己的立场。" },
+                { name: "权杖八", icon: "🔥", meaning: "快速行动，消息迅速传播，事情快速发展。" },
+                { name: "权杖九", icon: "🔥", meaning: "警惕和防御，过去的伤害，需要自我保护。" },
+                { name: "权杖十", icon: "🔥", meaning: "负担和责任，过度劳累，需要放下一些压力。" },
+                { name: "权杖侍从", icon: "🔥", meaning: "热情的年轻人，新的消息，充满活力的开始。" },
+                { name: "权杖骑士", icon: "🔥", meaning: "冲动和热情，快速行动，充满活力的追求者。" },
+                { name: "权杖王后", icon: "🔥", meaning: "热情和活力，独立自信，充满创造力的女性。" },
+                { name: "权杖国王", icon: "🔥", meaning: "领导力和热情，自信果断，有魅力的领导者。" },
+                
+                // 圣杯 (水元素)
+                { name: "圣杯Ace", icon: "💧", meaning: "情感的开始，新的关系，心灵的满足和喜悦。" },
+                { name: "圣杯二", icon: "💧", meaning: "合作和友谊，平等的关系，互相理解和支持。" },
+                { name: "圣杯三", icon: "💧", meaning: "庆祝和友谊，社交活动，团队合作的成功。" },
+                { name: "圣杯四", icon: "💧", meaning: "不满和反思，错失机会，需要看到眼前的美好。" },
+                { name: "圣杯五", icon: "💧", meaning: "悲伤和失落，关注失去的，忽略拥有的。" },
+                { name: "圣杯六", icon: "💧", meaning: "回忆和怀旧，过去的美好，回归童年的安全感。" },
+                { name: "圣杯七", icon: "💧", meaning: "幻想和选择，内心的渴望，区分现实与梦想。" },
+                { name: "圣杯八", icon: "💧", meaning: "离开和寻找，不满现状，寻求更高的满足。" },
+                { name: "圣杯九", icon: "💧", meaning: "满足和幸福，内心的喜悦，对现状的满意。" },
+                { name: "圣杯十", icon: "💧", meaning: "家庭幸福，情感圆满，和谐的家庭关系。" },
+                { name: "圣杯侍从", icon: "💧", meaning: "敏感的年轻人，情感的开始，富有想象力。" },
+                { name: "圣杯骑士", icon: "💧", meaning: "浪漫和感性，温柔的追求者，情感丰富。" },
+                { name: "圣杯王后", icon: "💧", meaning: "温柔和关怀，充满爱心，善解人意的女性。" },
+                { name: "圣杯国王", icon: "💧", meaning: "成熟和包容，富有同情心，情感稳定的领导者。" },
+                
+                // 宝剑 (风元素)
+                { name: "宝剑Ace", icon: "💨", meaning: "思想的开始，新的想法，清晰的思维和沟通。" },
+                { name: "宝剑二", icon: "💨", meaning: "逃避和犹豫，不愿面对现实，需要做出选择。" },
+                { name: "宝剑三", icon: "💨", meaning: "悲伤和心碎，情感的痛苦，需要时间疗愈。" },
+                { name: "宝剑四", icon: "💨", meaning: "休息和反思，暂时的平静，需要远离纷争。" },
+                { name: "宝剑五", icon: "💨", meaning: "冲突和胜利，得不偿失的胜利，人际关系紧张。" },
+                { name: "宝剑六", icon: "💨", meaning: "疗愈和过渡，慢慢恢复，离开痛苦的环境。" },
+                { name: "宝剑七", icon: "💨", meaning: "策略和欺骗，智取而非力敌，可能不诚实。" },
+                { name: "宝剑八", icon: "💨", meaning: "限制和束缚，自我设限，需要寻求帮助和解脱。" },
+                { name: "宝剑九", icon: "💨", meaning: "焦虑和恐惧，内心的痛苦，失眠和精神压力。" },
+                { name: "宝剑十", icon: "💨", meaning: "痛苦和结束，最终的打击，但也是新的开始。" },
+                { name: "宝剑侍从", icon: "💨", meaning: "好奇的年轻人，消息和沟通，思维敏捷。" },
+                { name: "宝剑骑士", icon: "💨", meaning: "敏捷和冲动，思维快速，直言不讳的沟通。" },
+                { name: "宝剑王后", icon: "💨", meaning: "智慧和独立，思维清晰，有洞察力的女性。" },
+                { name: "宝剑国王", icon: "💨", meaning: "理智和权威，冷静果断，有智慧的领导者。" },
+                
+                // 星币 (土元素)
+                { name: "星币Ace", icon: "🪙", meaning: "物质的开始，新的机会，财务上的好运。" },
+                { name: "星币二", icon: "🪙", meaning: "平衡和选择，兼顾不同事务，财务上的权衡。" },
+                { name: "星币三", icon: "🪙", meaning: "合作和技能，团队工作，专业技能的运用。" },
+                { name: "星币四", icon: "🪙", meaning: "稳定和占有，财务安全，但可能过于吝啬。" },
+                { name: "星币五", icon: "🪙", meaning: "财务困难，物质缺乏，但情感上可能有支持。" },
+                { name: "星币六", icon: "🪙", meaning: "给予和接受，慈善和平衡，公平的交换。" },
+                { name: "星币七", icon: "🪙", meaning: "评估和耐心，审视成果，需要耐心等待收获。" },
+                { name: "星币八", icon: "🪙", meaning: "技能和工作，勤奋努力，提升专业能力。" },
+                { name: "星币九", icon: "🪙", meaning: "富足和独立，财务稳定，享受劳动成果。" },
+                { name: "星币十", icon: "🪙", meaning: "财富和传承，家庭富足，长久的财务安全。" },
+                { name: "星币侍从", icon: "🪙", meaning: "务实的年轻人，学习新技能，财务上的开始。" },
+                { name: "星币骑士", icon: "🪙", meaning: "踏实和可靠，稳步前进，注重实际成果。" },
+                { name: "星币王后", icon: "🪙", meaning: "丰饶和务实，富有耐心，注重物质安全的女性。" },
+                { name: "星币国王", icon: "🪙", meaning: "成功和富足，商业头脑，务实的领导者。" }
+            ]
+        };
+
+        // 牌阵配置
+        const spreadConfigs = {
+            single: {
+                count: 1,
+                info: "<strong>单牌抽牌</strong>：最简洁的牌阵，用于快速获取当下问题的核心指引。",
+                positions: ["当前能量"]
+            },
+            choice: {
+                count: 2,
+                info: "<strong>二选一牌阵</strong>：用于在两个选项之间做决定，第一张代表选项A，第二张代表选项B。",
+                positions: ["选项A", "选项B"]
+            },
+            three: {
+                count: 3,
+                info: "<strong>三牌运势牌阵</strong>：经典的时间流牌阵，解读过去的影响、现在的状况和未来的发展趋势。",
+                positions: ["过去的影响", "现在的状况", "未来的发展"]
+            },
+            five: {
+                count: 5,
+                info: "<strong>五牌心灵牌阵</strong>：深入探索问题的核心，涵盖现状、阻碍、建议、潜在和结果五个维度。",
+                positions: ["问题核心", "主要阻碍", "行动建议", "潜在机会", "最终结果"]
+            },
+            celtic: {
+                count: 10,
+                info: "<strong>凯尔特十字牌阵</strong>：最经典的全面牌阵，涵盖问题的各个层面，提供深度解读。",
+                positions: [
+                    "现状", "阻碍/帮助", "过去", "未来", "外在环境", 
+                    "内在想法", "近期结果", "他人态度", "希望/恐惧", "最终结果"
+                ]
+            }
+        };
+
+        // 当前选中的牌阵
+        let currentSpread = "single";
+        // 所有塔罗牌的合并数组
+        const allTarotCards = [...tarotCards.major, ...tarotCards.minor];
+
+        // 获取DOM元素
+        const tarotContainer = document.getElementById('tarotContainer');
+        const drawBtn = document.getElementById('draw-btn');
+        const spreadBtns = document.querySelectorAll('.spread-btn');
+        const spreadInfo = document.getElementById('spreadInfo');
+
+        // 初始化牌阵选择
+        spreadBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // 切换激活状态
+                spreadBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // 更新当前牌阵
+                currentSpread = this.dataset.spread;
+                
+                // 更新牌阵说明
+                spreadInfo.innerHTML = spreadConfigs[currentSpread].info;
+                
+                // 重置牌容器样式
+                tarotContainer.className = `tarot-container ${currentSpread}`;
+                
+                // 清空并重新创建卡牌
+                resetCards();
+            });
+        });
+
+        // 创建塔罗牌元素
+        function createTarotCards(count) {
+            tarotContainer.innerHTML = '';
+            
+            for (let i = 0; i < count; i++) {
+                // 创建卡牌包装器
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'card-wrapper';
+                
+                // 创建卡牌本体
+                const card = document.createElement('div');
+                card.className = 'tarot-card';
+                card.dataset.index = i;
+                
+                // 牌背
+                const cardBack = document.createElement('div');
+                cardBack.className = 'card-face card-back';
+                
+                // 牌面
+                const cardFront = document.createElement('div');
+                cardFront.className = 'card-face card-front';
+                
+                // 牌面内容
+                const cardTitle = document.createElement('div');
+                cardTitle.className = 'card-title';
+                cardTitle.textContent = '塔罗牌';
+                
+                const cardImage = document.createElement('div');
+                cardImage.className = 'card-image';
+                cardImage.textContent = '🎴';
+                
+                const cardMeaning = document.createElement('div');
+                cardMeaning.className = 'card-meaning';
+                cardMeaning.textContent = '点击抽取按钮，揭开你的塔罗牌之谜...';
+                
+                // 组装牌面
+                cardFront.appendChild(cardTitle);
+                cardFront.appendChild(cardImage);
+                cardFront.appendChild(cardMeaning);
+                
+                // 组装卡牌
+                card.appendChild(cardBack);
+                card.appendChild(cardFront);
+                
+                // 创建牌位文字元素（移到卡牌下方）
+                const cardPosition = document.createElement('div');
+                cardPosition.className = 'card-position';
+                cardPosition.textContent = spreadConfigs[currentSpread].positions[i] || `牌${i+1}`;
+                
+                // 组装包装器：卡牌 + 下方文字
+                cardWrapper.appendChild(card);
+                cardWrapper.appendChild(cardPosition);
+                
+                // 添加到容器
+                tarotContainer.appendChild(cardWrapper);
+                
+                // 点击卡牌翻转
+                card.addEventListener('click', function() {
+                    if (this.classList.contains('flipped')) {
+                        this.classList.remove('flipped');
+                    } else {
+                        this.classList.add('flipped');
+                    }
+                });
+            }
+        }
+
+        // 重置卡牌
+        function resetCards() {
+            const cardCount = spreadConfigs[currentSpread].count;
+            createTarotCards(cardCount);
+            drawBtn.innerHTML = "抽取塔罗牌";
+            drawBtn.disabled = false;
+        }
+
+        // 抽取塔罗牌
+        function drawTarotCards() {
+            // 禁用按钮
+            drawBtn.disabled = true;
+            drawBtn.innerHTML = '<span class="loading"></span>正在抽取...';
+            
+            // 获取所有卡牌元素
+            const cards = document.querySelectorAll('.tarot-card');
+            const drawnIndexes = new Set();
+            
+            // 模拟抽牌延迟
+            setTimeout(() => {
+                cards.forEach((card, index) => {
+                    // 随机选择不重复的牌
+                    let randomIndex;
+                    do {
+                        randomIndex = Math.floor(Math.random() * allTarotCards.length);
+                    } while (drawnIndexes.has(randomIndex));
+                    drawnIndexes.add(randomIndex);
+                    
+                    const selectedCard = allTarotCards[randomIndex];
+                    
+                    // 延迟翻转每张牌，营造抽牌动画
+                    setTimeout(() => {
+                        // 更新牌面内容
+                        const cardFront = card.querySelector('.card-front');
+                        cardFront.querySelector('.card-title').textContent = selectedCard.name;
+                        cardFront.querySelector('.card-image').textContent = selectedCard.icon;
+                        cardFront.querySelector('.card-meaning').textContent = selectedCard.meaning;
+                        
+                        // 翻牌动画
+                        card.classList.add('flipped');
+                        
+                        // 最后一张牌翻完后恢复按钮
+                        if (index === cards.length - 1) {
+                            drawBtn.innerHTML = "重新抽取";
+                            drawBtn.disabled = false;
+                        }
+                    }, index * 500); // 每张牌间隔500ms翻转
+                });
+            }, 800);
+        }
+
+        // 绑定抽取按钮事件
+        drawBtn.addEventListener('click', function() {
+            // 重置所有卡牌为未翻转状态
+            document.querySelectorAll('.tarot-card').forEach(card => {
+                card.classList.remove('flipped');
+            });
+            
+            // 延迟后开始抽牌
+            setTimeout(drawTarotCards, 300);
+        });
+
+        // 初始化创建卡牌
+        createTarotCards(spreadConfigs[currentSpread].count);
+        
+        // 窗口大小变化时重新适配
+        window.addEventListener('resize', function() {
+            resetCards();
+        });
+
+        // 错误处理
+        window.addEventListener('error', function(e) {
+            console.error('发生错误:', e.error);
+            alert('抱歉，塔罗牌加载出错，请刷新页面重试。');
+            drawBtn.innerHTML = "抽取塔罗牌";
+            drawBtn.disabled = false;
+        });
+    </script>
+</body>
+</html>
